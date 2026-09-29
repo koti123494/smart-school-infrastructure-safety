@@ -19,6 +19,8 @@ import {
   LogOut,
   Building,
   Sparkles,
+  QrCode,
+  Siren,
 } from 'lucide-react';
 import { useApp, ActiveTab } from '../../context/AppContext';
 
@@ -35,11 +37,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onToggleCollapse,
   onCloseMobile,
 }) => {
-  const { activeTab, setActiveTab, problems, alerts, currentUser, logout } = useApp();
+  const { activeTab, setActiveTab, problems, alerts, emergencies, currentUser, logout } = useApp();
 
-  const openIssuesCount = problems.filter((p) => p.status !== 'RESOLVED').length;
+  const openIssuesCount = problems.filter((p) => p.status !== 'RESOLVED' && p.status !== 'VERIFIED').length;
   const criticalAlertsCount = alerts.filter(
     (a) => a.severity === 'critical' && a.status === 'active'
+  ).length;
+  const activeEmergenciesCount = emergencies.filter(
+    (e) => e.status !== 'Resolved' && e.status !== 'Verified'
   ).length;
 
   const navItems = [
@@ -105,6 +110,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
       roles: ['admin', 'supervisor', 'maintenance', 'teacher'],
     },
     {
+      tab: 'emergency-response' as ActiveTab,
+      label: 'Emergency Response',
+      icon: Siren,
+      badge: activeEmergenciesCount > 0 ? String(activeEmergenciesCount) : undefined,
+      badgeColor: 'bg-rose-600 text-white animate-pulse',
+      roles: ['admin', 'supervisor', 'maintenance', 'teacher'],
+    },
+    {
+      tab: 'ai-assistant' as ActiveTab,
+      label: 'AI Safety Assistant',
+      icon: Sparkles,
+      badge: 'AI',
+      badgeColor: 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-bold',
+      roles: ['admin', 'supervisor', 'maintenance', 'teacher'],
+    },
+    {
       tab: 'maintenance' as ActiveTab,
       label: 'Maintenance Staff',
       icon: Wrench,
@@ -127,6 +148,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: 'IoT Sensors',
       icon: Cpu,
       roles: ['admin', 'supervisor', 'maintenance'],
+    },
+    {
+      tab: 'qr-management' as ActiveTab,
+      label: 'Classroom QR Codes',
+      icon: QrCode,
+      roles: ['admin'],
     },
     {
       tab: 'admin' as ActiveTab,

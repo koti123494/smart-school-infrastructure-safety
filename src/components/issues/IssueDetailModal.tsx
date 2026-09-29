@@ -13,6 +13,7 @@ import {
   ArrowRight,
   ShieldCheck,
   FileText,
+  Sparkles,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { IssueStatus, PriorityLevel } from '../../types';
@@ -31,6 +32,7 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({ issueId, onC
     updateIssueStatus,
     assignIssue,
     resolveIssue,
+    selectForAiAnalysis,
   } = useApp();
 
   const [newNote, setNewNote] = useState('');
@@ -47,7 +49,7 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({ issueId, onC
   const issue = problems.find((p) => p.id === issueId || p.issueId === issueId);
   if (!issue) return null;
 
-  const steps: IssueStatus[] = ['REPORTED', 'ASSIGNED', 'IN PROGRESS', 'RESOLVED'];
+  const steps: IssueStatus[] = ['REPORTED', 'ASSIGNED', 'IN PROGRESS', 'RESOLVED', 'VERIFIED', 'CLOSED'];
   const currentStepIdx = steps.indexOf(issue.status);
 
   const handleAddNote = () => {
@@ -98,12 +100,34 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({ issueId, onC
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => {
+                onClose();
+                selectForAiAnalysis({
+                  id: issue.issueId,
+                  itemType: 'problem',
+                  title: issue.title,
+                  category: issue.category,
+                  location: issue.exactLocation,
+                  description: issue.description,
+                  severity: issue.priority,
+                  imageUrl: issue.beforeImage || issue.images[0]?.url,
+                });
+              }}
+              className="px-3.5 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              <span>AI Safety Advice</span>
+            </button>
+
+            <button
+              onClick={onClose}
+              className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
@@ -309,6 +333,29 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({ issueId, onC
                     AFTER REPAIR
                   </span>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* AI Incident Summary */}
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-sky-50 to-indigo-50 border border-sky-200">
+            <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4 text-indigo-600" />
+              AI Incident Summary
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-slate-700">
+              <div className="space-y-2 rounded-xl bg-white/70 p-3 border border-sky-200">
+                <div><span className="font-semibold text-slate-500 block">What happened</span><span>{issue.title}</span></div>
+                <div><span className="font-semibold text-slate-500 block">Where it happened</span><span>{issue.exactLocation}</span></div>
+                <div><span className="font-semibold text-slate-500 block">When it happened</span><span>{issue.reportedDate} at {issue.reportedTime}</span></div>
+                <div><span className="font-semibold text-slate-500 block">Reported problem</span><span>{issue.description}</span></div>
+              </div>
+              <div className="space-y-2 rounded-xl bg-white/70 p-3 border border-sky-200">
+                <div><span className="font-semibold text-slate-500 block">Sensor readings</span><span>{issue.source === 'sensor_auto' ? 'Automated sensor data reviewed' : 'Manual staff observation recorded'}</span></div>
+                <div><span className="font-semibold text-slate-500 block">Actions taken</span><span>{issue.history.slice(-1)[0]?.comment || 'No action details recorded yet.'}</span></div>
+                <div><span className="font-semibold text-slate-500 block">Maintenance status</span><span>{issue.status}</span></div>
+                <div><span className="font-semibold text-slate-500 block">Resolution</span><span>{issue.resolutionNotes || 'Pending final resolution notes.'}</span></div>
+                <div><span className="font-semibold text-slate-500 block">Final status</span><span>{issue.status}</span></div>
               </div>
             </div>
           </div>

@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { StatusBadge } from '../common/StatusBadge';
+import { schoolImages, getProblemCategoryImage } from '../../data/imageLibrary';
 
 export const MainDashboard: React.FC = () => {
   const {
@@ -31,17 +32,22 @@ export const MainDashboard: React.FC = () => {
     sensors,
     problems,
     alerts,
+    backendConnected,
+    liveAnalytics,
     setActiveTab,
     setSelectedIssueId,
+    aiAssistantResponse,
+    generateAiAdvice,
+    demoScenario,
   } = useApp();
 
   // Metrics computation
   const totalClassrooms = classrooms.length;
   const activeSensors = sensors.filter((s) => s.status !== 'offline').length;
-  const openProblems = problems.filter((p) => p.status !== 'RESOLVED').length;
-  const criticalAlerts = alerts.filter((a) => a.severity === 'critical' && a.status !== 'resolved').length;
+  const openProblems = backendConnected && liveAnalytics ? liveAnalytics.open : problems.filter((p) => p.status !== 'RESOLVED' && p.status !== 'VERIFIED').length;
+  const criticalAlerts = backendConnected && liveAnalytics ? liveAnalytics.critical : alerts.filter((a) => a.severity === 'critical' && a.status !== 'resolved').length;
   const inProgressIssues = problems.filter((p) => p.status === 'IN PROGRESS').length;
-  const resolvedIssues = problems.filter((p) => p.status === 'RESOLVED').length;
+  const resolvedIssues = backendConnected && liveAnalytics ? liveAnalytics.resolved : problems.filter((p) => p.status === 'RESOLVED' || p.status === 'VERIFIED').length;
 
   // Real-time sensor indicators
   const smokeSensors = sensors.filter((s) => s.type === 'smoke');
@@ -114,17 +120,17 @@ export const MainDashboard: React.FC = () => {
       <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4">
         {/* Card 1: Total Classrooms */}
         <div
-          onClick={() => setActiveTab('classrooms')}
+          onClick={() => setActiveTab(backendConnected ? 'issues' : 'classrooms')}
           className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:border-blue-400 transition cursor-pointer group"
         >
           <div className="flex items-center justify-between text-slate-400 group-hover:text-blue-600 transition">
-            <span className="text-xs font-semibold text-slate-600">Total Classrooms</span>
+            <span className="text-xs font-semibold text-slate-600">{backendConnected ? 'Total Issues' : 'Total Classrooms'}</span>
             <GraduationCap className="w-4 h-4" />
           </div>
           <div className="text-2xl font-bold text-slate-900 mt-2 font-mono">
-            {totalClassrooms}
+            {backendConnected && liveAnalytics ? liveAnalytics.total : backendConnected ? '—' : totalClassrooms}
           </div>
-          <p className="text-[11px] text-slate-400 mt-1">Across 4 Blocks</p>
+          <p className="text-[11px] text-slate-400 mt-1">{backendConnected ? 'All database records' : 'Across 4 Blocks'}</p>
         </div>
 
         {/* Card 2: Active IoT Sensors */}
@@ -137,11 +143,10 @@ export const MainDashboard: React.FC = () => {
             <Cpu className="w-4 h-4" />
           </div>
           <div className="text-2xl font-bold text-emerald-600 mt-2 font-mono">
-            {activeSensors}
+            {backendConnected ? '—' : activeSensors}
           </div>
           <p className="text-[11px] text-emerald-600/80 mt-1 flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            100% Online Telemetry
+            {backendConnected ? 'No live sensor API' : <><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />100% Online Telemetry</>}
           </p>
         </div>
 
@@ -168,7 +173,7 @@ export const MainDashboard: React.FC = () => {
           }`}
         >
           <div className="flex items-center justify-between text-slate-400 group-hover:text-rose-600 transition">
-            <span className="text-xs font-semibold text-rose-700">Critical Alerts</span>
+            <span className="text-xs font-semibold text-rose-700">{backendConnected ? 'Critical Issues' : 'Critical Alerts'}</span>
             <ShieldAlert className="w-4 h-4 text-rose-600" />
           </div>
           <div className="text-2xl font-bold text-rose-600 mt-2 font-mono flex items-center gap-2">
@@ -209,6 +214,43 @@ export const MainDashboard: React.FC = () => {
           </div>
           <p className="text-[11px] text-emerald-600/80 mt-1">Verified resolutions</p>
         </div>
+      </div>
+
+      {aiAssistantResponse && (
+        <div className="bg-gradient-to-r from-sky-50 to-indigo-50 border border-sky-200 rounded-2xl p-5 shadow-sm">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-sky-700">
+                <Activity className="w-4 h-4" />
+                AI Safety Assistant
+              </div>
+              <h3 className="mt-2 text-lg font-bold text-slate-900">{aiAssistantResponse.title}</h3>
+            </div>
+            <div className="text-xs px-2.5 py-1 rounded-full bg-sky-100 text-sky-700 border border-sky-200 font-semibold">
+              {aiAssistantResponse.demoMode ? 'Demo Mode / Fallback' : 'AI-assisted'}
+            </div>
+          </div>
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-slate-700">
+            <div className="rounded-xl bg-white/80 p-3 border border-sky-200"><span className="block text-[11px] font-bold uppercase text-slate-500">Possible Cause</span><span className="mt-1 block">{aiAssistantResponse.possibleCause}</span></div>
+            <div className="rounded-xl bg-white/80 p-3 border border-sky-200"><span className="block text-[11px] font-bold uppercase text-slate-500">Risk</span><span className="mt-1 block">{aiAssistantResponse.risk}</span></div>
+            <div className="rounded-xl bg-white/80 p-3 border border-sky-200"><span className="block text-[11px] font-bold uppercase text-slate-500">Recommended Action</span><span className="mt-1 block">{aiAssistantResponse.recommendedAction}</span></div>
+            <div className="rounded-xl bg-white/80 p-3 border border-sky-200"><span className="block text-[11px] font-bold uppercase text-slate-500">Maintenance Suggestion</span><span className="mt-1 block">{aiAssistantResponse.maintenanceSuggestion}</span></div>
+          </div>
+          <div className="mt-4 flex items-center justify-between gap-2 flex-wrap">
+            <span className="text-xs font-semibold text-slate-600">Priority: <span className="text-sky-700">{aiAssistantResponse.priority}</span></span>
+            <button
+              onClick={() => generateAiAdvice({ title: 'Live Monitoring Review', description: 'Temperature spike and ventilation issue observed in classroom', location: 'Block A', category: 'Electrical', severity: 'medium' })}
+              className="px-3 py-1.5 rounded-lg bg-sky-700 text-white text-xs font-semibold hover:bg-sky-800 transition"
+            >
+              Refresh AI Advisory
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-slate-100 rounded-2xl border border-slate-200 p-4 text-xs text-slate-600 flex items-center justify-between gap-3 flex-wrap">
+        <span><strong>Demo scenario:</strong> {demoScenario}</span>
+        <span className="px-2.5 py-1 bg-white border border-slate-200 rounded-full text-slate-700">AI fallback active; no keys exposed to frontend</span>
       </div>
 
       {/* Section 5: Real-Time Safety Monitoring & Live Campus Monitoring */}

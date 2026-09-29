@@ -11,6 +11,11 @@
   </head>
   <body class="bg-slate-50 text-slate-900 antialiased font-sans">
     <div id="root"></div>
+    <script>
+      if (localStorage.getItem('smart-school-theme') === 'dark') {
+        document.documentElement.classList.add('dark');
+      }
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

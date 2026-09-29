@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { StatusBadge } from '../common/StatusBadge';
+import { getClassroomImage } from '../../data/imageLibrary';
 import { ClassroomDetailModal } from './ClassroomDetailModal';
 
 export const ClassroomMonitoring: React.FC = () => {
@@ -126,9 +127,29 @@ export const ClassroomMonitoring: React.FC = () => {
             <div
               key={room.id}
               onClick={() => setSelectedClassroomId(room.id)}
-              className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:border-blue-500 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group"
+              className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:border-blue-500 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group"
             >
-              <div>
+              <div className="relative h-32 overflow-hidden">
+                <img
+                  src={getClassroomImage(room.roomNumber)}
+                  alt={room.roomNumber}
+                  className="w-full h-full object-cover transition duration-300 group-hover:scale-105"
+                  onError={(event) => {
+                    event.currentTarget.src = 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=900&q=80';
+                  }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/55 to-transparent" />
+                <div className="absolute left-3 top-3 flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-white/90 text-blue-700 flex items-center justify-center font-bold text-xs shadow-sm">
+                    <GraduationCap className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="absolute right-3 top-3">
+                  <StatusBadge status={room.status} size="sm" />
+                </div>
+              </div>
+
+              <div className="p-5">
                 {/* Header: Title and Status Badge */}
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
@@ -144,7 +165,6 @@ export const ClassroomMonitoring: React.FC = () => {
                       </p>
                     </div>
                   </div>
-                  <StatusBadge status={room.status} size="sm" />
                 </div>
 
                 {/* Occupancy */}

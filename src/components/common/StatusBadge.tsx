@@ -51,8 +51,14 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, size = 'md', c
     case 'REPORTED':
     case 'ASSIGNED':
     case 'INFO':
+    case 'VERIFIED':
       colorClasses = 'bg-blue-50 text-blue-700 border-blue-200';
       dotColor = 'bg-blue-500';
+      break;
+
+    case 'CLOSED':
+      colorClasses = 'bg-slate-200 text-slate-700 border-slate-300';
+      dotColor = 'bg-slate-500';
       break;
 
     case 'LOW':

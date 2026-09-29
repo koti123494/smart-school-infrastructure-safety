@@ -3,6 +3,8 @@
 > **Enterprise SaaS Digital Operations Platform for K-12 & Higher Education Campuses**  
 > *Developed for Smart India Hackathon (SIH), College Project Demonstrations, and Presentation to School Administrators.*
 
+> **Prototype status:** The current frontend uses seeded, locally simulated application state. The optional API now validates sensor telemetry and demonstrates threshold alerts, but stores data in memory and has no authentication, persistent database connection, or configured AI/notification provider. Do not use it for real emergency response or production school operations.
+
 ---
 
 ## 🏛️ System Overview
@@ -115,15 +117,19 @@ Rather than treating school complaints as simple text tickets, this platform pro
 
 | Layer | Technologies |
 |---|---|
-| **Frontend** | React 18, TypeScript, Tailwind CSS, Lucide Icons, Web Audio API |
-| **Backend** | Node.js, Express.js, REST API, WebSocket / Socket.IO |
-| **Database** | PostgreSQL (Relational schema in `server/schema.sql`) |
-| **IoT Connectivity** | MQTT Broker Protocol, ESP32 / Raspberry Pi Gateway Interface |
-| **Security** | Role-Based Access Control (RBAC), JWT Authentication |
+| **Frontend** | React 19, TypeScript, Tailwind CSS, Lucide Icons, Web Audio API |
+| **Backend** | Dependency-free Node.js HTTP API, REST endpoints, Server-Sent Events |
+| **Database** | In-memory demo API; `server/schema.sql` is a PostgreSQL starting schema and is not wired to the server |
+| **IoT Connectivity** | HTTP telemetry ingestion prototype; no MQTT broker is configured |
+| **Security** | Frontend role-switching is for demonstration only; API authentication and authorization are not implemented |
 
 ---
 
 ## 🏃 Quick Start Guide
+
+### Production-style Backend (PostgreSQL + Prisma)
+
+The original React application is preserved. The independent typed API lives in [`backend/README.md`](backend/README.md); it provides JWT auth, issue/report workflows, uploads, analytics, and Socket.IO. Configure `backend/.env`, apply Prisma migrations, then run `npm run dev` inside `backend/`. The frontend runs from the repository root and uses `http://localhost:5001` by default when an API token is present. It continues to use its local demo state when the API is unavailable.
 
 ### 1. Run the Frontend (Vite + React)
 ```bash
@@ -139,7 +145,22 @@ Open **`http://localhost:5173`** in your browser.
 ```bash
 node server/server.js
 ```
-The server will start on **`http://localhost:5000`** with the MQTT telemetry ingest endpoint ready at `http://localhost:5000/api/iot/telemetry`.
+The demo API starts at **`http://localhost:5000`**. It provides `GET /api/health`, `GET /api/dashboard`, `GET /api/sensors`, `GET /api/alerts`, `POST /api/sensors/data`, `GET /api/sensors/:sensorId/readings`, `PATCH /api/alerts/:id`, and the `GET /api/events` SSE stream. The older `POST /api/iot/telemetry` path remains as a compatibility alias.
+
+The API validates sensor IDs, supported types, finite numeric values, locations, timestamps, and battery percentages. Readings and alerts exist only in server memory and are lost on restart. Set `SENSOR_THRESHOLDS_JSON` to a JSON object keyed by sensor type to enable configured warning/critical limits; no universal safety thresholds are assumed. `.env.example` documents the optional settings. Node does not load `.env` files by itself, so export the variables in your shell or use an approved environment loader.
+
+Example telemetry request:
+```json
+{
+  "sensor_id": "TMP-101",
+  "sensor_type": "temperature",
+  "value": 46,
+  "unit": "C",
+  "location": "Room 101, Block A"
+}
+```
+
+Run backend tests with `npm test`. `POST /api/ai/analyze-alert` and `POST /api/ai/assistant` are backend-only integration boundaries; they return HTTP 503 with “Insufficient data available.” until a provider adapter is injected into `createAIService`. No provider is identifiable/configured in this repository. Put any future credential in the server environment as `AI_API_KEY`; never expose it to frontend code. Before production, add authentication and role authorization, persistent storage, rate limiting, validated school-specific thresholds, audit logs, and explicitly authorized notification/emergency integrations.
 
 ---
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Cpu,
   Search,
@@ -31,6 +31,56 @@ export const IoTSensorDashboard: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<'all' | 'online' | 'warning' | 'critical' | 'offline'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddSensorOpen, setIsAddSensorOpen] = useState(false);
+  const [gatewayStatus, setGatewayStatus] = useState<'checking' | 'connected' | 'unavailable'>('checking');
+  const [gatewaySummary, setGatewaySummary] = useState('Checking demo API...');
+
+  useEffect(() => {
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+    let active = true;
+
+    const refreshGateway = async () => {
+      try {
+        const response = await fetch(`${apiBaseUrl}/api/dashboard`);
+        if (!response.ok) throw new Error('Demo API is unavailable.');
+        const data = await response.json() as {
+          sensors: { total: number };
+          activeAlerts: number;
+          mode: string;
+        };
+        if (!active) return;
+        setGatewayStatus('connected');
+        setGatewaySummary(`${data.sensors.total} API sensors · ${data.activeAlerts} active alerts · ${data.mode} mode`);
+      } catch {
+        if (!active) return;
+        setGatewayStatus('unavailable');
+        setGatewaySummary('Start the optional API to receive device telemetry.');
+      }
+    };
+
+    void refreshGateway();
+    const refreshInterval = window.setInterval(() => void refreshGateway(), 15000);
+    const eventStream = new EventSource(`${apiBaseUrl}/api/events`);
+    eventStream.addEventListener('sensor.updated', (event) => {
+      const update = JSON.parse((event as MessageEvent<string>).data) as {
+        sensor: { sensor_id: string; status: string };
+      };
+      setGatewayStatus('connected');
+      setGatewaySummary(`Latest: ${update.sensor.sensor_id} · ${update.sensor.status}`);
+    });
+    eventStream.addEventListener('alert.created', () => {
+      setGatewayStatus('connected');
+      void refreshGateway();
+    });
+    eventStream.onerror = () => {
+      if (active) setGatewayStatus('unavailable');
+    };
+
+    return () => {
+      active = false;
+      window.clearInterval(refreshInterval);
+      eventStream.close();
+    };
+  }, []);
 
   // Form for new sensor
   const [newCode, setNewCode] = useState('TMP-205');
@@ -105,13 +155,21 @@ export const IoTSensorDashboard: React.FC = () => {
             <h1 className="text-xl sm:text-2xl font-bold text-slate-900">
               IoT Sensor Network &amp; Hardware Telemetry
             </h1>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              MQTT Mesh Active
+            <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold flex items-center gap-1 ${
+              gatewayStatus === 'connected'
+                ? 'bg-emerald-100 text-emerald-800'
+                : gatewayStatus === 'checking'
+                  ? 'bg-amber-100 text-amber-800'
+                  : 'bg-slate-100 text-slate-700'
+            }`}>
+              <span className={`w-2 h-2 rounded-full ${
+                gatewayStatus === 'connected' ? 'bg-emerald-500' : gatewayStatus === 'checking' ? 'bg-amber-500' : 'bg-slate-400'
+              }`} />
+              API {gatewayStatus}
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Real-time sensory telemetry across classrooms, laboratories, utility rooms, and outdoor tanks.
+            Seeded dashboard sensors are demo data. API gateway: {gatewaySummary}
           </p>
         </div>
 

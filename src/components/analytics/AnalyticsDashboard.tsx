@@ -16,11 +16,16 @@ import { useApp } from '../../context/AppContext';
 import { StatusBadge } from '../common/StatusBadge';
 
 export const AnalyticsDashboard: React.FC = () => {
-  const { problems, recurringInsights, classrooms, setActiveTab } = useApp();
+  const { problems, recurringInsights, classrooms, setActiveTab, backendConnected, liveAnalytics } = useApp();
   const [timeframe, setTimeframe] = useState<'30d' | '90d' | 'ytd'>('90d');
 
-  // Breakdown by Category
-  const categoryData = [
+  const categoryColors = ['bg-amber-500', 'bg-cyan-500', 'bg-blue-500', 'bg-rose-500', 'bg-indigo-500', 'bg-emerald-500', 'bg-slate-400'];
+  const categoryData = backendConnected && liveAnalytics ? liveAnalytics.byCategory.map((item, index) => ({
+    name: item.category,
+    count: item.count,
+    percentage: liveAnalytics.total ? Math.round(item.count / liveAnalytics.total * 100) : 0,
+    color: categoryColors[index % categoryColors.length],
+  })) : [
     { name: 'Electrical', count: 18, percentage: 32, color: 'bg-amber-500' },
     { name: 'Plumbing & Water', count: 12, percentage: 22, color: 'bg-cyan-500' },
     { name: 'Furniture & Desks', count: 9, percentage: 16, color: 'bg-blue-500' },
@@ -31,7 +36,12 @@ export const AnalyticsDashboard: React.FC = () => {
   ];
 
   // Breakdown by Location (Requirement 16)
-  const locationData = [
+  const locationColors = ['bg-blue-600', 'bg-cyan-600', 'bg-rose-600', 'bg-indigo-600', 'bg-emerald-600', 'bg-orange-600'];
+  const locationData = backendConnected && liveAnalytics ? liveAnalytics.byLocation.map((item, index) => ({
+    location: item.location,
+    count: item.count,
+    color: locationColors[index % locationColors.length],
+  })) : [
     { location: 'Classrooms (All Blocks)', count: 26, color: 'bg-blue-600' },
     { location: 'Washrooms', count: 14, color: 'bg-cyan-600' },
     { location: 'Laboratories (Science)', count: 8, color: 'bg-rose-600' },
@@ -41,7 +51,10 @@ export const AnalyticsDashboard: React.FC = () => {
   ];
 
   // Monthly Problem Trend (Requirement 16)
-  const monthlyTrend = [
+  const monthlyTrend = backendConnected && liveAnalytics ? liveAnalytics.monthly.map((item) => ({
+    month: new Date(`${item.month}-01T00:00:00`).toLocaleDateString('en', { month: 'short', year: '2-digit' }),
+    count: item.count,
+  })) : [
     { month: 'Apr', count: 14 },
     { month: 'May', count: 19 },
     { month: 'Jun', count: 8 },
@@ -50,7 +63,9 @@ export const AnalyticsDashboard: React.FC = () => {
     { month: 'Sep (Current)', count: 28 },
   ];
 
-  const maxMonthly = Math.max(...monthlyTrend.map((m) => m.count));
+  const maxMonthly = Math.max(1, ...monthlyTrend.map((m) => m.count));
+  const maxLocation = Math.max(1, ...locationData.map((item) => item.count));
+  const peakMonth = monthlyTrend.reduce((peak, month) => month.count > peak.count ? month : peak, { month: 'No data', count: 0 });
 
   return (
     <div className="space-y-6">
@@ -93,8 +108,8 @@ export const AnalyticsDashboard: React.FC = () => {
             <span className="text-xs font-semibold text-slate-600">Avg Response Time</span>
             <Clock className="w-4 h-4 text-blue-600" />
           </div>
-          <div className="text-2xl font-bold text-blue-700 mt-2 font-mono">18 mins</div>
-          <p className="text-[11px] text-emerald-600 font-medium mt-1">↓ 4m faster than SLA</p>
+          <div className="text-2xl font-bold text-blue-700 mt-2 font-mono">{backendConnected ? '—' : '18 mins'}</div>
+          <p className="text-[11px] text-slate-400 font-medium mt-1">{backendConnected ? 'Not available from live API' : '↓ 4m faster than SLA'}</p>
         </div>
 
         <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm">
@@ -102,8 +117,8 @@ export const AnalyticsDashboard: React.FC = () => {
             <span className="text-xs font-semibold text-slate-600">Avg Resolution Time</span>
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
           </div>
-          <div className="text-2xl font-bold text-emerald-700 mt-2 font-mono">2.4 hours</div>
-          <p className="text-[11px] text-emerald-600 font-medium mt-1">94.2% within SLA</p>
+          <div className="text-2xl font-bold text-emerald-700 mt-2 font-mono">{backendConnected && liveAnalytics?.averageHours != null ? `${liveAnalytics.averageHours.toFixed(1)} hours` : backendConnected ? '—' : '2.4 hours'}</div>
+          <p className="text-[11px] text-slate-400 font-medium mt-1">{backendConnected ? 'Database average' : '94.2% within SLA'}</p>
         </div>
 
         <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm">
@@ -111,8 +126,8 @@ export const AnalyticsDashboard: React.FC = () => {
             <span className="text-xs font-semibold text-slate-600">Open Issues</span>
             <AlertTriangle className="w-4 h-4 text-amber-500" />
           </div>
-          <div className="text-2xl font-bold text-slate-900 mt-2 font-mono">12</div>
-          <p className="text-[11px] text-slate-400 mt-1">5 in progress now</p>
+          <div className="text-2xl font-bold text-slate-900 mt-2 font-mono">{backendConnected && liveAnalytics ? liveAnalytics.open : 12}</div>
+          <p className="text-[11px] text-slate-400 mt-1">{backendConnected ? `${problems.filter((problem) => problem.status === 'IN PROGRESS').length} in progress now` : '5 in progress now'}</p>
         </div>
 
         <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm">
@@ -120,7 +135,7 @@ export const AnalyticsDashboard: React.FC = () => {
             <span className="text-xs font-semibold text-slate-600">Resolved Issues</span>
             <CheckCircle2 className="w-4 h-4 text-blue-600" />
           </div>
-          <div className="text-2xl font-bold text-slate-900 mt-2 font-mono">126</div>
+          <div className="text-2xl font-bold text-slate-900 mt-2 font-mono">{backendConnected && liveAnalytics ? liveAnalytics.resolved : 126}</div>
           <p className="text-[11px] text-slate-400 mt-1">Certified by faculty</p>
         </div>
 
@@ -129,8 +144,8 @@ export const AnalyticsDashboard: React.FC = () => {
             <span className="text-xs font-semibold text-rose-700">Overdue Issues</span>
             <ShieldAlert className="w-4 h-4 text-rose-600" />
           </div>
-          <div className="text-2xl font-bold text-rose-600 mt-2 font-mono">1</div>
-          <p className="text-[11px] text-rose-600 font-medium mt-1">Escalated to Supervisor</p>
+          <div className="text-2xl font-bold text-rose-600 mt-2 font-mono">{backendConnected ? '—' : '1'}</div>
+          <p className="text-[11px] text-rose-600 font-medium mt-1">{backendConnected ? 'Not available from live API' : 'Escalated to Supervisor'}</p>
         </div>
       </div>
 
@@ -140,7 +155,7 @@ export const AnalyticsDashboard: React.FC = () => {
         <div className="lg:col-span-6 bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-slate-900">Problems by Category</h3>
-            <span className="text-xs text-slate-400">Total: 58 incidents</span>
+            <span className="text-xs text-slate-400">Total: {backendConnected && liveAnalytics ? liveAnalytics.total : 58} incidents</span>
           </div>
 
           <div className="space-y-3 pt-2">
@@ -172,8 +187,7 @@ export const AnalyticsDashboard: React.FC = () => {
 
           <div className="space-y-3 pt-2">
             {locationData.map((loc) => {
-              const maxCount = 26;
-              const widthPct = Math.round((loc.count / maxCount) * 100);
+              const widthPct = Math.round((loc.count / maxLocation) * 100);
 
               return (
                 <div key={loc.location} className="space-y-1">
@@ -199,10 +213,10 @@ export const AnalyticsDashboard: React.FC = () => {
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-sm font-bold text-slate-900">Monthly Reported Issues Trend</h3>
-            <p className="text-xs text-slate-500">Seasonal spike during monsoon &amp; high academic traffic</p>
+            <p className="text-xs text-slate-500">{backendConnected ? 'Monthly issue counts from the live database' : 'Seasonal spike during monsoon &amp; high academic traffic'}</p>
           </div>
           <span className="text-xs font-semibold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg">
-            Peak: August (31 Issues)
+            Peak: {peakMonth.month} ({peakMonth.count} Issues)
           </span>
         </div>
 
@@ -243,13 +257,15 @@ export const AnalyticsDashboard: React.FC = () => {
           </div>
 
           <span className="text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200 px-3 py-1 rounded-xl">
-            {recurringInsights.length} Hotspots Identified
+            {backendConnected ? 'Live insights unavailable' : `${recurringInsights.length} Hotspots Identified`}
           </span>
         </div>
 
         {/* Recurring Insight Cards matching Prompt Requirement 16 & 17 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {recurringInsights.map((insight) => (
+          {backendConnected ? (
+            <p className="text-xs text-slate-500">The live backend does not provide recurring-problem analysis.</p>
+          ) : recurringInsights.map((insight) => (
             <div
               key={insight.id}
               className={`p-5 rounded-2xl border transition flex flex-col justify-between ${

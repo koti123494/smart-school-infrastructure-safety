@@ -16,6 +16,12 @@ import {
   User as UserIcon,
   LogOut,
   Sparkles,
+  Moon,
+  SunMedium,
+  Play,
+  Pause,
+  CheckCircle2,
+  Thermometer,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { NotificationDrawer } from './NotificationDrawer';
@@ -39,6 +45,12 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
     triggerEmergencySimulation,
     resetSimulations,
     setActiveTab,
+    theme,
+    setTheme,
+    demoScenario,
+    setDemoScenario,
+    presentationMode,
+    setPresentationMode,
   } = useApp();
 
   const [isSchoolDropdownOpen, setIsSchoolDropdownOpen] = useState(false);
@@ -210,6 +222,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
                   <div className="border-t border-slate-100 my-1"></div>
                   <button
                     onClick={() => {
+                      setDemoScenario('normal');
                       resetSimulations();
                       setIsSimMenuOpen(false);
                     }}
@@ -218,9 +231,58 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
                     <RotateCcw className="w-4 h-4 text-slate-500" />
                     <span className="font-medium">Reset Campus to Baseline</span>
                   </button>
+                  <button
+                    onClick={() => {
+                      setDemoScenario('classroom-problem');
+                      setIsSimMenuOpen(false);
+                    }}
+                    className="w-full text-left p-2 rounded-lg hover:bg-slate-100 text-slate-600 flex items-center gap-2 transition"
+                  >
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                    <span className="font-medium">Scenario: Classroom Problem</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setDemoScenario('environmental-warning');
+                      setIsSimMenuOpen(false);
+                    }}
+                    className="w-full text-left p-2 rounded-lg hover:bg-slate-100 text-slate-600 flex items-center gap-2 transition"
+                  >
+                    <Thermometer className="w-4 h-4 text-amber-500" />
+                    <span className="font-medium">Scenario: Environmental Warning</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setDemoScenario('critical-alert');
+                      setIsSimMenuOpen(false);
+                    }}
+                    className="w-full text-left p-2 rounded-lg hover:bg-slate-100 text-slate-600 flex items-center gap-2 transition"
+                  >
+                    <Flame className="w-4 h-4 text-rose-500" />
+                    <span className="font-medium">Scenario: Critical Safety Alert</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setPresentationMode(!presentationMode);
+                      setIsSimMenuOpen(false);
+                    }}
+                    className="w-full text-left p-2 rounded-lg hover:bg-slate-100 text-slate-600 flex items-center gap-2 transition"
+                  >
+                    {presentationMode ? <Pause className="w-4 h-4 text-slate-500" /> : <Play className="w-4 h-4 text-slate-500" />}
+                    <span className="font-medium">{presentationMode ? 'Stop Presentation Mode' : 'Start Presentation Mode'}</span>
+                  </button>
                 </div>
               )}
             </div>
+
+            {/* Theme Toggle */}
+            <button
+              onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+              className="p-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 transition"
+              title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+            >
+              {theme === 'light' ? <Moon className="w-4 h-4" /> : <SunMedium className="w-4 h-4" />}
+            </button>
 
             {/* Sound Toggle */}
             <button
@@ -237,15 +299,24 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
 
             {/* Notifications Button */}
             <button
+              id="notif-bell-btn"
               onClick={() => setIsNotifDrawerOpen(true)}
-              className="relative p-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 transition"
-              title="Notifications"
+              className={`relative p-2 rounded-lg border transition-all ${
+                unreadNotifCount > 0
+                  ? 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100'
+                  : 'border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700'
+              }`}
+              title={unreadNotifCount > 0 ? `${unreadNotifCount} unread notifications` : 'Notifications'}
+              aria-label={`Notifications${unreadNotifCount > 0 ? `, ${unreadNotifCount} unread` : ''}`}
             >
-              <Bell className="w-4 h-4" />
+              <Bell className={`w-4 h-4 ${unreadNotifCount > 0 ? 'text-blue-600' : ''}`} />
               {unreadNotifCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-rose-600 text-white font-bold text-[10px] w-4 h-4 rounded-full flex items-center justify-center animate-bounce">
-                  {unreadNotifCount}
-                </span>
+                <>
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-rose-600 text-white font-bold text-[10px] rounded-full flex items-center justify-center leading-none z-10">
+                    {unreadNotifCount > 99 ? '99+' : unreadNotifCount}
+                  </span>
+                  <span className="absolute -top-1 -right-1 w-[18px] h-[18px] bg-rose-400 rounded-full animate-ping opacity-60" />
+                </>
               )}
             </button>
 

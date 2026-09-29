@@ -29,6 +29,7 @@ export const AlertCenter: React.FC = () => {
     triggerEmergencySimulation,
     setSelectedIssueId,
     setActiveTab,
+    selectForAiAnalysis,
   } = useApp();
 
   const [filterSeverity, setFilterSeverity] = useState<'all' | 'critical' | 'warning' | 'info'>('all');
@@ -285,6 +286,24 @@ export const AlertCenter: React.FC = () => {
                     title="View multi-channel notification status"
                   >
                     Channels
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      selectForAiAnalysis({
+                        id: alert.id,
+                        itemType: 'alert',
+                        title: alert.title,
+                        category: alert.title,
+                        location: alert.location,
+                        description: alert.message,
+                        severity: alert.severity,
+                      });
+                    }}
+                    className="px-3 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-sm"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                    <span>AI Safety Advice</span>
                   </button>
 
                   <button

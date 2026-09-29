@@ -14,16 +14,29 @@ import { SurroundingsProblems } from './components/problems/SurroundingsProblems
 import { ReportProblemWizard } from './components/problems/ReportProblemWizard';
 import { IssueManagement } from './components/issues/IssueManagement';
 import { AlertCenter } from './components/alerts/AlertCenter';
+import { EmergencyResponseCenter } from './components/emergency/EmergencyResponseCenter';
+import { AiSafetyAssistant } from './components/ai/AiSafetyAssistant';
 import { MaintenanceDashboard } from './components/maintenance/MaintenanceDashboard';
 import { TeacherDashboard } from './components/teacher/TeacherDashboard';
 import { AnalyticsDashboard } from './components/analytics/AnalyticsDashboard';
 import { IoTSensorDashboard } from './components/iot/IoTSensorDashboard';
 import { AdminManagement } from './components/admin/AdminManagement';
+import { ClassroomQrManagement } from './components/admin/ClassroomQrManagement';
 
 export const AppContent: React.FC = () => {
-  const { activeTab, isLoggedIn } = useApp();
+  const { activeTab, isLoggedIn, setActiveTab } = useApp();
   const [isSidebarOpenMobile, setIsSidebarOpenMobile] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  React.useEffect(() => {
+    const hasClassroomQr = new URLSearchParams(window.location.search).has('classroom');
+    if (hasClassroomQr) setActiveTab('report-problem');
+  }, [setActiveTab]);
+
+  const hasPasswordResetToken = new URLSearchParams(window.location.search).has('resetToken');
+  if (hasPasswordResetToken) {
+    return <LoginPage />;
+  }
 
   // If user is on landing page
   if (activeTab === 'landing') {
@@ -55,6 +68,10 @@ export const AppContent: React.FC = () => {
         return <IssueManagement />;
       case 'alerts':
         return <AlertCenter />;
+      case 'emergency-response':
+        return <EmergencyResponseCenter />;
+      case 'ai-assistant':
+        return <AiSafetyAssistant />;
       case 'maintenance':
         return <MaintenanceDashboard />;
       case 'teacher-reports':
@@ -63,6 +80,8 @@ export const AppContent: React.FC = () => {
         return <AnalyticsDashboard />;
       case 'iot-sensors':
         return <IoTSensorDashboard />;
+      case 'qr-management':
+        return <ClassroomQrManagement />;
       case 'admin':
         return <AdminManagement />;
       default:
@@ -95,7 +114,7 @@ export const AppContent: React.FC = () => {
           <Navbar onToggleSidebar={() => setIsSidebarOpenMobile(!isSidebarOpenMobile)} />
 
           {/* Main Page View Body */}
-          <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto animate-fadeIn">
+          <main className={`flex-1 p-4 sm:p-6 lg:p-8 ${activeTab === 'issues' ? 'max-w-[2200px]' : 'max-w-7xl'} w-full mx-auto animate-fadeIn`}>
             {renderActiveView()}
           </main>
         </div>

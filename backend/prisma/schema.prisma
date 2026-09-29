@@ -1,0 +1,290 @@
+generator client {
+  provider = "prisma-client-js"
+  engineType = "client"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  TEACHER
+  STUDENT
+  MAINTENANCE_STAFF
+  SECURITY
+  CANTEEN_STAFF
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum IssueStatus {
+  REPORTED
+  ASSIGNED
+  WORK_STARTED
+  IN_PROGRESS
+  RESOLVED
+  VERIFIED
+}
+
+enum AlertStatus {
+  ACTIVE
+  ACKNOWLEDGED
+  RESOLVED
+}
+
+enum EmergencyStatus {
+  REPORTED
+  ACKNOWLEDGED
+  TEAM_ASSIGNED
+  RESPONDING
+  ON_SCENE
+  RESOLVED
+  VERIFIED
+}
+
+model User {
+  id                 String              @id @default(uuid()) @db.Uuid
+  name               String              @db.VarChar(120)
+  email              String              @unique @db.VarChar(254)
+  passwordHash       String              @map("password_hash")
+  phoneNumber        String?             @map("phone_number") @db.VarChar(32)
+  role               Role
+  section            String?             @db.VarChar(80)
+  departmentId       String?             @map("department_id") @db.Uuid
+  department         Department?         @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  reports            ProblemReport[]     @relation("ReportReporter")
+  assignedIssues     IssueAssignment[]   @relation("IssueAssignee")
+  assignedBy         IssueAssignment[]   @relation("IssueAssigner")
+  timelineEntries    IssueTimeline[]
+  notifications      Notification[]
+  safetyAlerts       SafetyAlert[]       @relation("AlertCreator")
+  acknowledgedAlerts SafetyAlert[]       @relation("AlertAcknowledger")
+  emergencies        EmergencyIncident[] @relation("EmergencyReporter")
+  foodComplaints     FoodComplaint[]
+  maintenanceTasks   MaintenanceTask[]
+  qrReports          QRReport[]
+  passwordResetTokens PasswordResetToken[]
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
+
+  @@index([role])
+  @@map("users")
+}
+
+model Department {
+  id           String            @id @default(uuid()) @db.Uuid
+  name         String            @unique @db.VarChar(100)
+  description  String?
+  users        User[]
+  assignments  IssueAssignment[]
+  createdAt    DateTime          @default(now()) @map("created_at")
+  updatedAt    DateTime          @updatedAt @map("updated_at")
+
+  @@map("departments")
+}
+
+model ProblemReport {
+  id             String   @id @default(uuid()) @db.Uuid
+  issueId        String   @unique @map("issue_id") @db.Uuid
+  issue          Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  reporterId     String   @map("reporter_id") @db.Uuid
+  reporter       User     @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: Restrict)
+  section        String?  @db.VarChar(80)
+  reporterPhone  String?  @map("reporter_phone") @db.VarChar(32)
+  locationType   String?  @map("location_type") @db.VarChar(80)
+  building       String?  @db.VarChar(120)
+  floor          String?  @db.VarChar(80)
+  classroom      String?  @db.VarChar(80)
+  exactLocation  String   @map("exact_location") @db.VarChar(240)
+  imageUrl       String?  @map("image_url") @db.VarChar(500)
+  source         String   @default("human") @db.VarChar(30)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@index([reporterId, createdAt])
+  @@index([exactLocation])
+  @@map("problem_reports")
+}
+
+model Issue {
+  id               String            @id @default(uuid()) @db.Uuid
+  issueNumber      String            @unique @map("issue_number") @db.VarChar(40)
+  title            String            @db.VarChar(180)
+  description      String            @db.Text
+  location         String            @db.VarChar(240)
+  category         String            @db.VarChar(100)
+  priority         Priority          @default(MEDIUM)
+  status           IssueStatus       @default(REPORTED)
+  resolutionNotes  String?           @map("resolution_notes") @db.Text
+  resolutionImage  String?           @map("resolution_image") @db.VarChar(500)
+  reportedAt       DateTime          @default(now()) @map("reported_at")
+  resolvedAt       DateTime?         @map("resolved_at")
+  verifiedAt       DateTime?         @map("verified_at")
+  report           ProblemReport?
+  assignment       IssueAssignment?
+  timeline         IssueTimeline[]
+  foodComplaint    FoodComplaint?
+  maintenanceTask  MaintenanceTask?
+  qrReport         QRReport?
+  notifications    Notification[]
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+
+  @@index([status, priority])
+  @@index([category, location])
+  @@index([reportedAt])
+  @@map("issues")
+}
+
+model IssueAssignment {
+  id            String     @id @default(uuid()) @db.Uuid
+  issueId       String     @unique @map("issue_id") @db.Uuid
+  issue         Issue      @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  departmentId  String?    @map("department_id") @db.Uuid
+  department    Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  assigneeId    String?    @map("assignee_id") @db.Uuid
+  assignee      User?      @relation("IssueAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  assignedById  String     @map("assigned_by_id") @db.Uuid
+  assignedBy    User       @relation("IssueAssigner", fields: [assignedById], references: [id], onDelete: Restrict)
+  assignedAt    DateTime   @default(now()) @map("assigned_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+
+  @@map("issue_assignments")
+}
+
+model IssueTimeline {
+  id          String      @id @default(uuid()) @db.Uuid
+  issueId     String      @map("issue_id") @db.Uuid
+  issue       Issue       @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  actorId     String?     @map("actor_id") @db.Uuid
+  actor       User?       @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  status      IssueStatus
+  note        String?     @db.Text
+  createdAt   DateTime    @default(now()) @map("created_at")
+
+  @@index([issueId, createdAt])
+  @@map("issue_timeline")
+}
+
+model Notification {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String?  @map("user_id") @db.Uuid
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  issueId   String?  @map("issue_id") @db.Uuid
+  issue     Issue?   @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  type      String   @db.VarChar(60)
+  title     String   @db.VarChar(180)
+  message   String   @db.Text
+  readAt    DateTime? @map("read_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId, readAt, createdAt])
+  @@map("notifications")
+}
+
+model SafetyAlert {
+  id              String      @id @default(uuid()) @db.Uuid
+  title           String      @db.VarChar(180)
+  message         String      @db.Text
+  location        String      @db.VarChar(240)
+  priority        Priority
+  status          AlertStatus @default(ACTIVE)
+  source          String      @default("staff") @db.VarChar(40)
+  createdById     String?     @map("created_by_id") @db.Uuid
+  createdBy       User?       @relation("AlertCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  acknowledgedById String?    @map("acknowledged_by_id") @db.Uuid
+  acknowledgedBy  User?       @relation("AlertAcknowledger", fields: [acknowledgedById], references: [id], onDelete: SetNull)
+  acknowledgedAt  DateTime?   @map("acknowledged_at")
+  resolvedAt      DateTime?   @map("resolved_at")
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  @@index([priority, status, createdAt])
+  @@map("safety_alerts")
+}
+
+model EmergencyIncident {
+  id             String          @id @default(uuid()) @db.Uuid
+  incidentNumber String          @unique @map("incident_number") @db.VarChar(40)
+  type           String          @db.VarChar(80)
+  location       String          @db.VarChar(240)
+  description    String          @db.Text
+  priority       Priority
+  status         EmergencyStatus @default(REPORTED)
+  reporterId     String          @map("reporter_id") @db.Uuid
+  reporter       User            @relation("EmergencyReporter", fields: [reporterId], references: [id], onDelete: Restrict)
+  evidenceImage  String?         @map("evidence_image") @db.VarChar(500)
+  timeline       Json            @default("[]")
+  reportedAt     DateTime        @default(now()) @map("reported_at")
+  resolvedAt     DateTime?       @map("resolved_at")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+
+  @@index([status, priority, reportedAt])
+  @@map("emergency_incidents")
+}
+
+model FoodComplaint {
+  id               String   @id @default(uuid()) @db.Uuid
+  issueId          String   @unique @map("issue_id") @db.Uuid
+  issue            Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  reporterId       String   @map("reporter_id") @db.Uuid
+  reporter         User     @relation(fields: [reporterId], references: [id], onDelete: Restrict)
+  selectedDay      String   @map("selected_day") @db.VarChar(20)
+  lunchMenu        String   @map("lunch_menu") @db.Text
+  studentName      String   @map("student_name") @db.VarChar(120)
+  section          String   @db.VarChar(80)
+  complaint        String   @db.Text
+  imageUrl         String?  @map("image_url") @db.VarChar(500)
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  @@map("food_complaints")
+}
+
+model MaintenanceTask {
+  id          String   @id @default(uuid()) @db.Uuid
+  issueId     String   @unique @map("issue_id") @db.Uuid
+  issue       Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  assigneeId  String?  @map("assignee_id") @db.Uuid
+  assignee    User?    @relation(fields: [assigneeId], references: [id], onDelete: SetNull)
+  notes       String?  @db.Text
+  dueAt       DateTime? @map("due_at")
+  completedAt DateTime? @map("completed_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("maintenance_tasks")
+}
+
+model QRReport {
+  id          String   @id @default(uuid()) @db.Uuid
+  issueId     String   @unique @map("issue_id") @db.Uuid
+  issue       Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  reporterId  String   @map("reporter_id") @db.Uuid
+  reporter    User     @relation(fields: [reporterId], references: [id], onDelete: Restrict)
+  qrCode      String   @map("qr_code") @db.VarChar(120)
+  classroom   String   @db.VarChar(80)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("qr_reports")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  tokenHash String   @unique @map("token_hash") @db.VarChar(64)
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
