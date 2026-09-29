@@ -5,6 +5,16 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [react()],
   server: {
+    port: 5173,
+    strictPort: true,
+
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5001',
+        changeOrigin: true,
+      },
+    },
+
     watch: {
       // OneDrive can temporarily lock synced assets while native watchers attach.
       usePolling: true,
