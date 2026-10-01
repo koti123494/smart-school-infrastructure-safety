@@ -24,7 +24,7 @@ export const DEFAULT_ALERT_NUMBERS = ['6304805605', '9999999999', '8888888888'];
 const STORAGE_KEY = 'qis_alert_numbers';
 
 /** Base dashboard URL */
-const DASHBOARD_URL = 'http://localhost:5173/live';
+const DASHBOARD_URL = typeof window !== 'undefined' ? `${window.location.origin}/live` : 'http://localhost:5173/live';
 
 // ---------------------------------------------------------------------------
 // Helpers
