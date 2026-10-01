@@ -127,6 +127,8 @@ export interface Classroom {
   lastInspectionDate: string;
   assignedTeacher?: string;
   sensorIds: string[];
+  type?: string;
+  imageUrl?: string;
 }
 
 export type SensorType = 'temperature' | 'smoke' | 'water' | 'electrical' | 'air_quality' | 'vibration';
