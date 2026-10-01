@@ -227,6 +227,25 @@ const NotifCard: React.FC<NotifCardProps> = ({ notif, onRead, onDelete, onNaviga
             )}
           </div>
         )}
+
+        {/* WhatsApp-style delivery confirmation for critical alerts */}
+        {isCritical && (
+          <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-slate-100">
+            <span className="text-[10px] text-slate-400">
+              Sent to{' '}
+              <span className="font-mono font-semibold text-slate-600">6304805605</span>
+              {' '}at {notif.timestamp}
+            </span>
+            <span className="flex items-center gap-0.5" title="Delivered (WhatsApp blue ticks)">
+              {/* Double blue tick — WhatsApp delivered style */}
+              <svg width="16" height="11" viewBox="0 0 16 11" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M1 5.5L4.5 9L10 2" stroke="#53bdeb" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M6 5.5L9.5 9L15 2" stroke="#53bdeb" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <span className="text-[10px] font-semibold" style={{ color: '#53bdeb' }}>Blue ticks</span>
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Unread dot */}
