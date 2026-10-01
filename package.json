@@ -10,6 +10,7 @@
     "dev:frontend": "vite --port 5174 --strictPort false",
     "dev:all": "concurrently --kill-others \"npm run dev:backend\" \"vite --port 5174 --strictPort false\"",
     "build": "tsc -b && vite build",
+    "start": "serve -s dist -l $PORT",
     "lint": "oxlint",
     "test": "node --test server/*.test.js",
     "preview": "vite preview"
@@ -23,6 +24,7 @@
     "qrcode": "^1.5.4",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "serve": "^14.2.6",
     "socket.io-client": "^4.8.4"
   },
   "devDependencies": {
