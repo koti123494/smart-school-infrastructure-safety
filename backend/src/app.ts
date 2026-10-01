@@ -33,6 +33,13 @@ app.use(
 
 app.use(express.json({ limit: '1mb' }));
 
+app.get('/', (_req, res) => {
+  res.status(200).json({
+    message: 'Smart School API is running',
+    status: 'success',
+  });
+});
+
 app.get('/api/health', (_req, res) =>
   res.json({
     status: 'online',
