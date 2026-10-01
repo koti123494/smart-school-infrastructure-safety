@@ -23,6 +23,7 @@ import {
   Siren,
 } from 'lucide-react';
 import { useApp, ActiveTab } from '../../context/AppContext';
+import { getSosAlerts } from '../../services/sosService';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -38,6 +39,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onCloseMobile,
 }) => {
   const { activeTab, setActiveTab, problems, alerts, emergencies, currentUser, logout } = useApp();
+
+  const [activeSosCount, setActiveSosCount] = React.useState<number>(() => {
+    return getSosAlerts().filter((a) => a.status === 'Active').length;
+  });
+
+  React.useEffect(() => {
+    const handleUpdate = () => {
+      setActiveSosCount(getSosAlerts().filter((a) => a.status === 'Active').length);
+    };
+    window.addEventListener('sosAlertsUpdated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    return () => {
+      window.removeEventListener('sosAlertsUpdated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
+  }, []);
 
   const openIssuesCount = problems.filter((p) => p.status !== 'RESOLVED' && p.status !== 'VERIFIED').length;
   const criticalAlertsCount = alerts.filter(
@@ -107,6 +124,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: ShieldAlert,
       badge: criticalAlertsCount > 0 ? String(criticalAlertsCount) : undefined,
       badgeColor: 'bg-rose-600 text-white animate-pulse',
+      roles: ['admin', 'supervisor', 'maintenance', 'teacher'],
+    },
+    {
+      tab: 'security' as ActiveTab,
+      label: 'Security & SOS',
+      icon: ShieldAlert,
+      badge: activeSosCount > 0 ? String(activeSosCount) : undefined,
+      badgeColor: 'bg-red-600 text-white animate-pulse',
       roles: ['admin', 'supervisor', 'maintenance', 'teacher'],
     },
     {

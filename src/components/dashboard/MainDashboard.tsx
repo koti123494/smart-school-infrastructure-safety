@@ -22,6 +22,7 @@ import {
 import { useApp } from '../../context/AppContext';
 import { StatusBadge } from '../common/StatusBadge';
 import { schoolImages, getProblemCategoryImage } from '../../data/imageLibrary';
+import { EmergencySosButton } from '../emergency/EmergencySosButton';
 
 export const MainDashboard: React.FC = () => {
   const {
@@ -84,7 +85,10 @@ export const MainDashboard: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Big RED Emergency SOS button on Dashboard top-right (Requirement 1) */}
+          <EmergencySosButton />
+
           <div
             className={`px-4 py-2 rounded-xl border flex items-center gap-2.5 font-bold text-xs uppercase tracking-wider shadow-sm ${
               campusSafetyStatus === 'safe'

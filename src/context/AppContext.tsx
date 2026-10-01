@@ -57,7 +57,8 @@ export type ActiveTab =
   | 'analytics'
   | 'iot-sensors'
   | 'qr-management'
-  | 'admin';
+  | 'admin'
+  | 'security';
 
 interface AppContextType {
   schools: School[];

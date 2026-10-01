@@ -27,6 +27,8 @@ import { CheckCircle2, AlertCircle } from 'lucide-react';
 import { DemoLoginPage } from './components/auth/DemoLoginPage';
 import EmergencyBanner from './components/EmergencyBanner';
 import ClassroomLiveGrid from './components/dashboard/ClassroomLiveGrid';
+import { CampusChatbot } from './components/chat/CampusChatbot';
+import { SecurityDashboard } from './components/security/SecurityDashboard';
 
 export const AppContent: React.FC = () => {
   const { activeTab, isLoggedIn, setActiveTab } = useApp();
@@ -37,18 +39,26 @@ export const AppContent: React.FC = () => {
   });
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
-  // Sync authRoute on browser navigation
+  // Sync authRoute and security route on browser navigation
   React.useEffect(() => {
     const handlePopState = () => {
       if (window.location.pathname === '/demo-login') {
         setAuthRoute('demo-login');
+      } else if (window.location.pathname === '/security') {
+        setActiveTab('security');
       } else {
         setAuthRoute('login');
       }
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
+  }, [setActiveTab]);
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.pathname === '/security') {
+      setActiveTab('security');
+    }
+  }, [setActiveTab]);
 
   // Display pending toasts on dashboard mount
   React.useEffect(() => {
@@ -142,6 +152,8 @@ export const AppContent: React.FC = () => {
         return <ClassroomQrManagement />;
       case 'admin':
         return <AdminManagement />;
+      case 'security':
+        return <SecurityDashboard />;
       default:
         return <MainDashboard />;
     }
@@ -212,5 +224,10 @@ export const AppContent: React.FC = () => {
 };
 
 export default function App() {
-  return <AppContent />;
+  return (
+    <>
+      <AppContent />
+      <CampusChatbot />
+    </>
+  );
 }

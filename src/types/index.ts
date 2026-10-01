@@ -374,3 +374,16 @@ export interface AiSafetyAnalysis {
   analyzedAt: string;
   hasImageAnalysis?: boolean;
 }
+
+export interface SosAlert {
+  id: string;
+  studentName: string;
+  studentPhone?: string;
+  location: string;
+  time: string;
+  timestamp: number;
+  status: 'Active' | 'Resolved';
+  gps?: string;
+  resolvedAt?: string;
+}
+

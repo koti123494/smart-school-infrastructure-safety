@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { NotificationDrawer } from './NotificationDrawer';
+import { getSosAlerts } from '../../services/sosService';
 
 interface NavbarProps {
   onToggleSidebar: () => void;
@@ -57,8 +58,24 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
   const [isSimMenuOpen, setIsSimMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isNotifDrawerOpen, setIsNotifDrawerOpen] = useState(false);
+  const [activeSosCount, setActiveSosCount] = useState<number>(() => {
+    return getSosAlerts().filter((a) => a.status === 'Active').length;
+  });
+
+  React.useEffect(() => {
+    const handleUpdate = () => {
+      setActiveSosCount(getSosAlerts().filter((a) => a.status === 'Active').length);
+    };
+    window.addEventListener('sosAlertsUpdated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    return () => {
+      window.removeEventListener('sosAlertsUpdated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
+  }, []);
 
   const unreadNotifCount = notifications.filter((n) => !n.read).length;
+  const displayAlertCount = activeSosCount > 0 ? activeSosCount : unreadNotifCount;
 
   return (
     <>
@@ -300,22 +317,47 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
             {/* Notifications Button */}
             <button
               id="notif-bell-btn"
-              onClick={() => setIsNotifDrawerOpen(true)}
+              onClick={() => {
+                if (activeSosCount > 0) {
+                  window.history.pushState(null, '', '/security');
+                  setActiveTab('security');
+                } else {
+                  setIsNotifDrawerOpen(true);
+                }
+              }}
               className={`relative p-2 rounded-lg border transition-all ${
-                unreadNotifCount > 0
+                activeSosCount > 0
+                  ? 'border-red-400 bg-red-50 text-red-700 hover:bg-red-100 ring-2 ring-red-400/40 animate-pulse'
+                  : unreadNotifCount > 0
                   ? 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100'
                   : 'border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700'
               }`}
-              title={unreadNotifCount > 0 ? `${unreadNotifCount} unread notifications` : 'Notifications'}
-              aria-label={`Notifications${unreadNotifCount > 0 ? `, ${unreadNotifCount} unread` : ''}`}
+              title={
+                activeSosCount > 0
+                  ? `🚨 ${activeSosCount} Active SOS Emergency Alert! Click to view`
+                  : unreadNotifCount > 0
+                  ? `${unreadNotifCount} unread notifications`
+                  : 'Notifications'
+              }
+              aria-label={`Notifications${
+                activeSosCount > 0
+                  ? `, ${activeSosCount} active SOS emergency`
+                  : unreadNotifCount > 0
+                  ? `, ${unreadNotifCount} unread`
+                  : ''
+              }`}
             >
-              <Bell className={`w-4 h-4 ${unreadNotifCount > 0 ? 'text-blue-600' : ''}`} />
-              {unreadNotifCount > 0 && (
+              <Bell className={`w-4 h-4 ${activeSosCount > 0 ? 'text-red-600 animate-bounce' : unreadNotifCount > 0 ? 'text-blue-600' : ''}`} />
+              {displayAlertCount > 0 && (
                 <>
-                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-rose-600 text-white font-bold text-[10px] rounded-full flex items-center justify-center leading-none z-10">
-                    {unreadNotifCount > 99 ? '99+' : unreadNotifCount}
+                  <span className={`absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 text-white font-bold text-[10px] rounded-full flex items-center justify-center leading-none z-10 ${
+                    activeSosCount > 0 ? 'bg-red-600 ring-2 ring-white' : 'bg-rose-600'
+                  }`}>
+                    {displayAlertCount > 99 ? '99+' : displayAlertCount}
                   </span>
-                  <span className="absolute -top-1 -right-1 w-[18px] h-[18px] bg-rose-400 rounded-full animate-ping opacity-60" />
+                  <span className={`absolute -top-1 -right-1 w-[18px] h-[18px] rounded-full animate-ping opacity-75 ${
+                    activeSosCount > 0 ? 'bg-red-500' : 'bg-rose-400'
+                  }`} />
                 </>
               )}
             </button>
